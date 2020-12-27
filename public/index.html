@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
+    <title>Mini chat</title>
+</head>
+<body class="container">
+    <h1 class="mt-5">Mini Chat</h1>
+    <hr />
+    <form id="miFormulario">
+        <div class="row">
+            <div class="col">
+                <ul id="misMensajes" class="mt-2"></ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-8">
+                <input type="text" id="mensaje" placeholder="Captura tu mensaje" class="form-control">
+            </div>
+            <div class="col-4">
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </div>
+        </div>
+    </form>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js" integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ==" crossorigin="anonymous"></script>
+    <script>
+        const socket = io("http://localhost:3000");
+        const formulario = document.getElementById("miFormulario");
+        const mensajes = document.getElementById("misMensajes");
+        const txtMensaje = document.getElementById("mensaje");
+
+        formulario.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const mensaje = txtMensaje.value;
+            if(mensaje.trim() === "") return;
+            socket.emit("mensaje-cliente", {
+                mensaje,
+                fecha: new Date()
+            })
+        });
+
+        socket.on('mensajes-chat', (listadoMensajes) => {
+            if(!Array.isArray(listadoMensajes) || listadoMensajes.length === 0) return;
+            let liMensajes = "";
+            listadoMensajes.forEach(({ mensaje, fecha }) => {
+                liMensajes += `
+                    <li><b>${fecha}</b>: ${mensaje}</li>
+                `;
+            });
+            mensajes.innerHTML = liMensajes;
+        });
+
+        // socket.on('mensaje-bienvenida', (mensaje) => {
+        //     console.log("El servidor emitio algo:", mensaje)
+        // });
+        // socket.emit('nuevo-cliente', {
+        //     msg: "Soy un nuevo cliente",
+        //     fecha: new Date()
+        // });
+        // setTimeout(() => {
+        //     socket.emit('nuevo-cliente', {
+        //         msg: "Ya pasaron 3 segundos, creo...",
+        //         fecha: new Date()
+        //     });
+        // }, 3000);
+    </script>
+</body>
+</html>
