@@ -1,7 +1,7 @@
 
 const Sockets = function(io) {
     this.io = io;
-    this.mensajes = [{ mensaje: "Bienvenido a todos", fecha: "Administrador" }];
+    this.mensajes = [{ mensaje: "Bienvenido a todos", usuario: "Administrador", fecha: new Date() }];
     this.socketsEvents();
 };
 
