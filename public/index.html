@@ -10,17 +10,32 @@
 <body class="container">
     <h1 class="mt-5">Mini Chat</h1>
     <hr />
-    <form id="miFormulario">
+    <div class="row">
+        <div class="col">
+            <ul id="misMensajes" class="mt-2 d-none"></ul>
+        </div>
+    </div>
+    <form id="miLogin">    
+        <div class="row">
+            <div class="col-8">
+                <input type="text" id="usuario" placeholder="Usuario" class="form-control">
+            </div>
+            <div class="col-4">
+                <button type="submit" class="btn btn-primary">Entrar al mini chat</button>
+            </div>
+            <div class="col-12">
+                <span id="error" class="text-danger"></span>
+            </div>
+        </div>
+    </form>
+    <form id="miFormulario" class="d-none">
         <div class="row">
             <div class="col">
                 <ul id="misMensajes" class="mt-2"></ul>
             </div>
         </div>
         <div class="row">
-            <div class="col-2">
-                <input type="text" id="usuario" placeholder="Usuario" class="form-control">
-            </div>
-            <div class="col-8">
+            <div class="col-10">
                 <input type="text" id="mensaje" placeholder="Captura tu mensaje" class="form-control">
             </div>
             <div class="col-2">
@@ -32,15 +47,52 @@
     <script src="moment-with-locales.js"></script>
     <script>
         moment.locale("es");
-        const url = "https://edder-socket-server.herokuapp.com/"; // "http://localhost:3000"
+        // "http://localhost:3000"
+        // "https://edder-socket-server.herokuapp.com/"
+        const url = "http://localhost:3000";
         const socket = io(url);
+        const login = document.getElementById("miLogin");
         const formulario = document.getElementById("miFormulario");
         const mensajes = document.getElementById("misMensajes");
         const txtMensaje = document.getElementById("mensaje");
         const txtUsuario = document.getElementById("usuario");
+        const txtError = document.getElementById("error");
+
+        function limpiarError(error = "") {
+            txtError.innerHTML = error;
+        }
+
+        function formatMensajes({ usuario, mensaje, fecha, tipo }) {
+            let msj = "";
+            switch(tipo) {
+                case "login":
+                    msj = `<li class="text-success"><b><i>${mensaje}</i></b></li>`;
+                    break;
+                case "logoff":
+                    msj = `<li class="text-danger"><b><i>${mensaje}</i></b></li>`;
+                    break;
+                default:
+                    msj = `<li><b>${usuario.usuario}</b> <i>(${moment(fecha).format("LLLL")})</i>: ${mensaje}</li>`;
+                    break;
+            }
+            return msj;
+        }
+
+        login.addEventListener("submit", (e) => {
+            e.preventDefault();
+            limpiarError();
+            const usuario = txtUsuario.value;
+            if(usuario.trim() === "") {
+                txtUsuario.focus();
+                return;
+            }
+            console.log(usuario)
+            socket.emit("nuevo-usuario", usuario.trim());
+        });
 
         formulario.addEventListener("submit", (e) => {
             e.preventDefault();
+            limpiarError();
             const mensaje = txtMensaje.value;
             const usuario = txtUsuario.value;
             if(mensaje.trim() === "") return;
@@ -51,30 +103,25 @@
             })
         });
 
+        socket.on('activar-chat', () => {
+            login.classList.add('d-none');
+            formulario.classList.remove('d-none');
+            mensajes.classList.remove('d-none');
+        });
+
         socket.on('mensajes-chat', (listadoMensajes) => {
             if(!Array.isArray(listadoMensajes) || listadoMensajes.length === 0) return;
             let liMensajes = "";
-            listadoMensajes.forEach(({ usuario, mensaje, fecha }) => {
-                liMensajes += `
-                    <li><b>${usuario}</b> <i>(${moment(fecha).format("LLLL")})</i>: ${mensaje}</li>
-                `;
+            listadoMensajes.forEach((msj) => {
+                liMensajes += formatMensajes(msj)
             });
             mensajes.innerHTML = liMensajes;
         });
 
-        // socket.on('mensaje-bienvenida', (mensaje) => {
-        //     console.log("El servidor emitio algo:", mensaje)
-        // });
-        // socket.emit('nuevo-cliente', {
-        //     msg: "Soy un nuevo cliente",
-        //     fecha: new Date()
-        // });
-        // setTimeout(() => {
-        //     socket.emit('nuevo-cliente', {
-        //         msg: "Ya pasaron 3 segundos, creo...",
-        //         fecha: new Date()
-        //     });
-        // }, 3000);
+        socket.on('error', (mensaje) => {
+            limpiarError(mensaje);
+        });
+
     </script>
 </body>
 </html>
