@@ -31,10 +31,12 @@ npm start
 
 + **Servidor**
 
-Si no funciona la **conexión** con el cliente, verificar el servidor al que apunta en la **línea 56** en **/public/index.html**
+Si no funciona la **conexión** con el cliente, verificar el servidor al que apunta en la **línea 115** en **/public/index.js** es el parámetro que recibe el constructor
 
 ```javascript
-    const url = "http://localhost:3000";
+    // "https://edder-socket-server.herokuapp.com/"
+    const cliente = new SocketCliente("http://localhost:3000");
+    cliente.execute();
 ```
 
 + Puerto
