@@ -3,7 +3,12 @@ const Sockets = function(io) {
     this.io = io;
     this.usuarios = [{ id: 1, usuario: "Administrador" }];
     this.mensajes = [{
-        mensaje: "Todos sean bienvenidos, no hay reglas ni moderadores; así que entran bajo su propio riesgo.",
+        mensaje: "Todos sean bienvenidos, <b>no hay reglas ni moderadores</b>; así que entran bajo <b class='text-danger'>su propio riesgo</b>.",
+        usuario: this.usuarios[0],
+        fecha: new Date(),
+        tipo: "mensaje"
+    },{
+        mensaje: "<i class='text-danger'>Tras 30 minutos de inactividad el servidor se pone en modo invernación y se limpian todos los mensajes.</i>",
         usuario: this.usuarios[0],
         fecha: new Date(),
         tipo: "mensaje"
@@ -30,6 +35,16 @@ Sockets.prototype.validaExiste = function(existe) {
     return (Array.isArray(existe) && existe.length > 0);
 }
 
+Sockets.prototype.cerrarSesion = function(id) {
+    let newUsuarios = this.nuevosUsuarios(id);
+    if(newUsuarios.length === this.usuarios.length) return;
+    let usuario = this.usuarioExiste(id);
+    this.usuarios = [...newUsuarios];
+    this.mensajes = [...this.mensajes, this.customMensaje("logoff", usuario)];
+    this.io.emit('mensajes-chat', this.mensajes);
+    this.io.emit('usuarios', this.usuarios);
+}
+
 Sockets.prototype.socketsEvents = function() {
     this.io.on("connection", (socket) => {
 
@@ -49,13 +64,11 @@ Sockets.prototype.socketsEvents = function() {
         });
 
         socket.on("disconnect", () => {
-            let newUsuarios = this.nuevosUsuarios(socket.id);
-            if(newUsuarios.length === this.usuarios.length) return;
-            let usuario = this.usuarioExiste(socket.id);
-            this.usuarios = [...newUsuarios];
-            this.mensajes = [...this.mensajes, this.customMensaje("logoff", usuario)];
-            this.io.emit('mensajes-chat', this.mensajes);
-            this.io.emit('usuarios', this.usuarios);
+            this.cerrarSesion(socket.id);
+        });
+
+        socket.on("salir-chat", () => {
+            this.cerrarSesion(socket.id);
         });
 
         socket.on("mensaje-cliente", ({ usuario, ...rest }) => {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
-    <title>Mini chat</title>
+    <title>Mini Chat</title>
 </head>
 <body class="container">
     <h1 class="mt-5">Mini Chat</h1>
@@ -13,12 +13,14 @@
     <div class="row">
         <div class="col" style="overflow-y: scroll; height: 100%; max-height: 300px;">
             <ul id="misMensajes" class="mt-2 d-none"></ul>
+            <div id="ultimoMensaje"></div>
+            <a id="irUltimo" href="#ultimoMensaje" class="d-none" /><a>
         </div>
     </div>
     <form id="miLogin">    
         <div class="row">
             <div class="col-8">
-                <input type="text" id="usuario" placeholder="Usuario" class="form-control">
+                <input type="text" id="usuario" placeholder="Captura un nombre de usuario" class="form-control">
             </div>
             <div class="col-4">
                 <button type="submit" class="btn btn-primary">Entrar al mini chat</button>
@@ -35,11 +37,14 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-10">
+            <div class="col-8">
                 <input type="text" id="mensaje" placeholder="Captura tu mensaje" class="form-control">
             </div>
-            <div class="col-2">
+            <div class="col-1">
                 <button type="submit" class="btn btn-primary">Enviar</button>
+            </div>
+            <div class="col-3">
+                <button type="button" id="salir" class="btn btn-danger">Abandonar chat</button>
             </div>
         </div>
     </form>
@@ -62,9 +67,19 @@
         const txtMensaje = document.getElementById("mensaje");
         const txtUsuario = document.getElementById("usuario");
         const txtError = document.getElementById("error");
+        const ultimo = document.getElementById("irUltimo");
+        const salir = document.getElementById("salir");
 
         function limpiarError(error = "") {
             txtError.innerHTML = error;
+        }
+
+        function limpiarSesion(mensaje) {
+            limpiarError(mensaje);
+            login.classList.remove('d-none');
+            formulario.classList.add('d-none');
+            mensajes.classList.add('d-none');
+            txtUsuario.focus();
         }
 
         function formatMensajes({ usuario, mensaje, fecha, tipo }) {
@@ -77,11 +92,16 @@
                     msj = `<li class="text-danger"><b><i>${mensaje}</i></b></li>`;
                     break;
                 default:
-                    msj = `<li><b>${usuario.usuario}</b> <i>(${moment(fecha).format("LLLL")})</i>: ${mensaje}</li>`;
+                    msj = `<li><b>${usuario.usuario}</b> <i>(${moment(fecha).format("LLLL")})</i>:<br />${mensaje}</li>`;
                     break;
             }
             return msj;
         }
+
+        salir.addEventListener("click", () => {
+            limpiarSesion('Se abandono la sala del chat');
+            socket.emit("salir-chat");
+        });
 
         login.addEventListener("submit", (e) => {
             e.preventDefault();
@@ -91,7 +111,6 @@
                 txtUsuario.focus();
                 return;
             }
-            console.log(usuario)
             socket.emit("nuevo-usuario", usuario.trim());
         });
 
@@ -142,14 +161,14 @@
                 liMensajes += formatMensajes(msj)
             });
             mensajes.innerHTML = liMensajes;
+            ultimo.click();
+            setTimeout(() => {
+                txtMensaje.focus();
+            }, 100);
         });
 
         socket.on('error', (mensaje) => {
-            limpiarError(mensaje);
-            login.classList.remove('d-none');
-            formulario.classList.add('d-none');
-            mensajes.classList.add('d-none');
-            txtUsuario.focus();
+            limpiarSesion(mensaje);
         });
 
     </script>
