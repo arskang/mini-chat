@@ -3,7 +3,7 @@ const Sockets = function(io) {
     this.io = io;
     this.usuarios = [{ id: 1, usuario: "Administrador" }];
     this.mensajes = [{
-        mensaje: "Bienvenido a todos",
+        mensaje: "Todos sean bienvenidos, no hay reglas ni moderadores; así que entran bajo su propio riesgo.",
         usuario: this.usuarios[0],
         fecha: new Date(),
         tipo: "mensaje"
@@ -26,14 +26,18 @@ Sockets.prototype.customMensaje = function(tipo, usuario) {
     }
 }
 
+Sockets.prototype.validaExiste = function(existe) {
+    return (Array.isArray(existe) && existe.length > 0);
+}
+
 Sockets.prototype.socketsEvents = function() {
     this.io.on("connection", (socket) => {
 
-        this.io.emit('mensajes-chat', this.mensajes);
+        this.io.emit('usuarios', this.usuarios);
 
         socket.on("nuevo-usuario", (usuario) => {
             let existe = this.usuarioExiste(usuario);
-            if(Array.isArray(existe) && existe.length > 0) {
+            if(this.validaExiste(existe)) {
                 socket.emit('error', "Actualmente ya existe un usuario con ese nombre en la sala");
                 return;
             }
@@ -41,6 +45,7 @@ Sockets.prototype.socketsEvents = function() {
             this.mensajes = [...this.mensajes, this.customMensaje("login", usuario)];
             socket.emit('activar-chat');
             this.io.emit('mensajes-chat', this.mensajes);
+            this.io.emit('usuarios', this.usuarios);
         });
 
         socket.on("disconnect", () => {
@@ -50,9 +55,15 @@ Sockets.prototype.socketsEvents = function() {
             this.usuarios = [...newUsuarios];
             this.mensajes = [...this.mensajes, this.customMensaje("logoff", usuario)];
             this.io.emit('mensajes-chat', this.mensajes);
+            this.io.emit('usuarios', this.usuarios);
         });
 
         socket.on("mensaje-cliente", ({ usuario, ...rest }) => {
+            let existe = this.usuarioExiste(usuario);
+            if(!this.validaExiste(existe)) {
+                socket.emit('error', "Necesitas acceder con un usuario");
+                return;
+            }
             this.mensajes = [...this.mensajes, { usuario: { usuario, id: socket.id }, ...rest }];
             this.io.emit('mensajes-chat', this.mensajes);
         });
